@@ -1,0 +1,493 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#090d1c">
+<title>Xevrune Intelligence</title>
+<style>
+:root{color-scheme:dark;--bg:#090d1c;--panel:#11182b;--line:#26324d;--accent:#9d8bff;--text:#f2f3ff;--muted:#aab4d0}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at top,#1b2142,var(--bg) 65%);color:var(--text);font:15px Arial,sans-serif;min-height:100vh}
+button,input,textarea{font:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:#202945;color:white;border-radius:10px;padding:10px 14px}
+button:hover{border-color:var(--accent)}
+button.primary{background:linear-gradient(120deg,#7864ed,#a06cff);border:0;font-weight:bold}
+button:disabled{opacity:.5;cursor:wait}
+input,textarea{width:100%;background:#0b1121;color:white;border:1px solid var(--line);border-radius:10px;padding:12px;outline:none}
+input:focus,textarea:focus{border-color:var(--accent)}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 5%;border-bottom:1px solid var(--line);background:#0b1020ef;position:sticky;top:0;z-index:5}
+.brand{font-size:23px;font-weight:900;letter-spacing:1px;color:#c1b5ff}
+.small{font-size:12px;color:var(--muted)}
+.layout{max-width:1150px;margin:25px auto;padding:0 16px;display:grid;grid-template-columns:255px minmax(0,1fr);gap:18px}
+.panel{background:#11182bef;border:1px solid var(--line);border-radius:17px;padding:17px;min-width:0}
+h2{font-size:17px;margin:0 0 12px}
+h3{font-size:14px;margin:17px 0 8px;color:#d9d4ff}
+.stack{display:grid;gap:9px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#chat{height:48vh;min-height:300px;max-height:600px;overflow:auto;display:flex;flex-direction:column;gap:12px;padding:5px 0 15px}
+.message{max-width:90%;padding:12px 14px;border-radius:14px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}
+.user{align-self:flex-end;background:#5545a9}
+.bot{align-self:flex-start;background:#1b2540;border:1px solid #303b5a}
+#composer{display:flex;gap:8px;align-items:stretch}
+#composer textarea{resize:vertical;min-height:48px;max-height:150px}
+#composer button{align-self:stretch}
+.status{padding:10px;border-radius:10px;background:#0c1325;color:#c8d0ed;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+.item{padding:10px;border-radius:9px;background:#0c1325;margin-top:7px;overflow-wrap:anywhere}
+.item button{margin-top:7px;padding:5px 8px;font-size:12px}
+.hidden{display:none!important}
+#auth{max-width:430px;margin:45px auto;padding:20px}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
+@media(max-width:760px){.layout{grid-template-columns:1fr;margin-top:12px}#chat{height:43vh}header{padding:12px}.brand{font-size:19px}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="brand">✦ XEVRUNE</div>
+    <div class="small">A new space for ideas.</div>
+  </div>
+  <div class="row">
+    <span id="accountLabel" class="small">Guest mode</span>
+    <button id="logoutBtn" class="hidden">Sign out</button>
+  </div>
+</header>
+
+<section id="auth" class="panel">
+  <h2>Welcome to Xevrune</h2>
+  <p class="small">Sign in to access your personal space.</p>
+  <div class="stack">
+    <input id="email" type="email" autocomplete="email" placeholder="Email address">
+    <input id="password" type="password" autocomplete="current-password" placeholder="Password (at least 6 characters)">
+    <button id="loginBtn" class="primary">Sign in</button>
+    <button id="signupBtn">Create an account</button>
+    <button id="guestBtn">Continue as guest</button>
+    <div id="authStatus" class="status" aria-live="polite">You can explore in guest mode or configure your account service.</div>
+  </div>
+</section>
+
+<div id="app" class="layout hidden">
+  <aside class="panel">
+    <h2>Control center</h2>
+    <div id="connectionStatus" class="status">Checking configuration...</div>
+
+    <h3>Xevrune Intelligence</h3>
+    <p class="small">Activate advanced conversation capabilities.</p>
+    <button id="loadModelBtn" class="primary" style="width:100%">Activate Intelligence</button>
+    <button id="stopModelBtn" style="width:100%;margin-top:7px">Pause Intelligence</button>
+    <div id="modelStatus" class="status" style="margin-top:8px">Ready when you are.</div>
+
+    <h3>Personal memory</h3>
+    <textarea id="memoryInput" rows="3" placeholder="What should Xevrune remember?"></textarea>
+    <button id="saveMemoryBtn" style="width:100%;margin-top:7px">Save memory</button>
+    <div id="memories" class="small" style="margin-top:8px">No memories loaded.</div>
+
+    <h3>Knowledge base</h3>
+    <input id="knowledgeQuestion" placeholder="Topic or question">
+    <textarea id="knowledgeAnswer" rows="2" placeholder="Fact or answer"></textarea>
+    <button id="saveKnowledgeBtn" style="width:100%;margin-top:7px">Add knowledge</button>
+    <input id="knowledgeSearch" placeholder="Search knowledge" style="margin-top:8px">
+    <div id="knowledgeResults"></div>
+
+    <h3>Tools</h3>
+    <button id="calcBtn" style="width:100%">Open calculator</button>
+    <button id="clearChatBtn" style="width:100%;margin-top:7px">Clear visible chat</button>
+  </aside>
+
+  <main class="panel">
+    <h2>Chat with Xevrune</h2>
+    <div class="small" style="margin-bottom:12px">Your ideas, explored together.</div>
+    <div id="chat" aria-live="polite">
+      <div class="message bot">Hello! I'm Xevrune. What would you like to explore today?</div>
+    </div>
+    <div id="typing" class="small" style="margin-bottom:8px"></div>
+    <div id="composer">
+      <textarea id="userInput" rows="2" placeholder="Message Xevrune..."></textarea>
+      <button id="sendBtn" class="primary">Send</button>
+    </div>
+    <p class="small">Enter to send · Shift+Enter for a new line</p>
+  </main>
+</div>
+
+<footer>Xevrune Intelligence</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+"use strict";
+
+/* Add your own Supabase project details here. */
+const SUPABASE_URL = "PASTE_YOUR_SUPABASE_PROJECT_URL";
+const SUPABASE_KEY = "PASTE_YOUR_SUPABASE_PUBLISHABLE_KEY";
+
+const $ = id => document.getElementById(id);
+const hasConfig = SUPABASE_URL.startsWith("https://") &&
+  SUPABASE_URL.endsWith(".supabase.co") &&
+  SUPABASE_KEY.startsWith("sb_publishable_");
+
+let db = null;
+let currentUser = null;
+let guest = false;
+let model = null;
+let modelLoading = false;
+let busy = false;
+
+function readLocal(key) {
+  try { return JSON.parse(localStorage.getItem(key) || "[]"); }
+  catch { return []; }
+}
+let localMemories = readLocal("xevrune_memories");
+let localKnowledge = readLocal("xevrune_knowledge");
+let localChat = readLocal("xevrune_chat");
+
+function setStatus(id, text) { $(id).textContent = text; }
+function errorText(e) { return e?.message || String(e); }
+
+function showApp() {
+  $("auth").classList.add("hidden");
+  $("app").classList.remove("hidden");
+  $("logoutBtn").classList.toggle("hidden", guest);
+  $("accountLabel").textContent = guest ? "Guest mode" : currentUser.email;
+  setStatus("connectionStatus", guest
+    ? "Guest space · data saved in this browser."
+    : "Signed in · cloud data enabled.");
+  renderMemories();
+  renderKnowledge();
+  restoreChat();
+}
+
+function showAuth() {
+  $("auth").classList.remove("hidden");
+  $("app").classList.add("hidden");
+  $("logoutBtn").classList.add("hidden");
+}
+
+async function init() {
+  if (!hasConfig || !window.supabase) {
+    setStatus("authStatus", "Account service not configured. You can use guest mode.");
+    setStatus("connectionStatus", "Guest mode available.");
+    return;
+  }
+  try {
+    db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const {data,error} = await db.auth.getSession();
+    if (error) throw error;
+    if (data.session) {
+      currentUser = data.session.user;
+      showApp();
+      await loadCloudData();
+    }
+    db.auth.onAuthStateChange((_event,session) => {
+      if (session) {
+        currentUser = session.user;
+        guest = false;
+        showApp();
+        loadCloudData();
+      } else if (!guest) {
+        currentUser = null;
+        showAuth();
+      }
+    });
+  } catch(e) {
+    setStatus("authStatus", "Setup issue: " + errorText(e));
+  }
+}
+
+async function signUp() {
+  if (!db) return setStatus("authStatus", "Add your account-service settings first.");
+  const email = $("email").value.trim();
+  const password = $("password").value;
+  if (!email || password.length < 6)
+    return setStatus("authStatus", "Enter your email and a password of at least 6 characters.");
+  setStatus("authStatus", "Creating account...");
+  const {data,error} = await db.auth.signUp({email,password});
+  if (error) return setStatus("authStatus",errorText(error));
+  if (data.session) {
+    currentUser = data.user; guest = false; showApp(); await loadCloudData();
+  } else setStatus("authStatus","Check your email for a confirmation link, then sign in.");
+}
+
+async function signIn() {
+  if (!db) return setStatus("authStatus", "Add your account-service settings first.");
+  const email = $("email").value.trim(), password = $("password").value;
+  if (!email || !password) return setStatus("authStatus","Enter your email and password.");
+  setStatus("authStatus","Signing in...");
+  const {data,error} = await db.auth.signInWithPassword({email,password});
+  if (error) return setStatus("authStatus",errorText(error));
+  currentUser = data.user; guest = false; showApp(); await loadCloudData();
+}
+
+async function signOut() {
+  if (db && !guest) {
+    const {error} = await db.auth.signOut();
+    if (error) return alert(errorText(error));
+  }
+  currentUser = null; guest = false; showAuth();
+}
+
+async function loadCloudData() {
+  if (!db || !currentUser || guest) return;
+  try {
+    const uid = currentUser.id;
+    const results = await Promise.all([
+      db.from("memories").select("id,content,created_at").eq("user_id",uid).order("created_at",{ascending:false}).limit(100),
+      db.from("knowledge").select("id,question,answer,created_at").eq("user_id",uid).order("created_at",{ascending:false}).limit(200),
+      db.from("chat_messages").select("id,role,content,created_at").eq("user_id",uid).order("created_at",{ascending:true}).limit(100)
+    ]);
+    for (const r of results) if (r.error) throw r.error;
+    [localMemories,localKnowledge,localChat] = results.map(r=>r.data || []);
+    renderMemories(); renderKnowledge(); restoreChat();
+    setStatus("connectionStatus","Your account data is loaded.");
+  } catch(e) {
+    setStatus("connectionStatus","Cloud setup needs attention: "+errorText(e));
+  }
+}
+
+async function insertCloud(table,row) {
+  const {data,error} = await db.from(table)
+    .insert({...row,user_id:currentUser.id}).select().single();
+  if (error) throw error;
+  return data;
+}
+
+async function saveMemory() {
+  const content = $("memoryInput").value.trim();
+  if (!content) return;
+  try {
+    let row;
+    if (db && currentUser && !guest) row = await insertCloud("memories",{content});
+    else row = {id:crypto.randomUUID(),content,created_at:new Date().toISOString()};
+    localMemories.unshift(row);
+    localStorage.setItem("xevrune_memories",JSON.stringify(localMemories));
+    $("memoryInput").value = ""; renderMemories();
+    setStatus("connectionStatus","Memory saved.");
+  } catch(e) { alert("Memory could not be saved: "+errorText(e)); }
+}
+
+function renderMemories() {
+  const box=$("memories"); box.replaceChildren();
+  if (!localMemories.length) { box.textContent="No saved memories yet."; return; }
+  localMemories.forEach(m=>{
+    const item=document.createElement("div"); item.className="item";
+    const content=document.createElement("div"); content.textContent=m.content;
+    const del=document.createElement("button"); del.textContent="Delete";
+    del.onclick=()=>deleteMemory(m.id);
+    item.append(content,del); box.append(item);
+  });
+}
+
+async function deleteMemory(id) {
+  try {
+    if (db && currentUser && !guest) {
+      const {error}=await db.from("memories").delete().eq("id",id).eq("user_id",currentUser.id);
+      if (error) throw error;
+    }
+    localMemories=localMemories.filter(m=>m.id!==id);
+    localStorage.setItem("xevrune_memories",JSON.stringify(localMemories));
+    renderMemories();
+  } catch(e) { alert("Delete failed: "+errorText(e)); }
+}
+
+async function saveKnowledge() {
+  const question=$("knowledgeQuestion").value.trim();
+  const answer=$("knowledgeAnswer").value.trim();
+  if (!question || !answer) return;
+  try {
+    let row;
+    if (db && currentUser && !guest) row=await insertCloud("knowledge",{question,answer});
+    else row={id:crypto.randomUUID(),question,answer,created_at:new Date().toISOString()};
+    localKnowledge.unshift(row);
+    localStorage.setItem("xevrune_knowledge",JSON.stringify(localKnowledge));
+    $("knowledgeQuestion").value=""; $("knowledgeAnswer").value="";
+    renderKnowledge();
+  } catch(e) { alert("Knowledge save failed: "+errorText(e)); }
+}
+
+function renderKnowledge() {
+  const box=$("knowledgeResults"); box.replaceChildren();
+  const q=$("knowledgeSearch").value.toLowerCase().trim();
+  const rows=localKnowledge.filter(k=>(k.question+" "+k.answer).toLowerCase().includes(q)).slice(0,15);
+  if (!rows.length) { box.textContent="No matching facts."; return; }
+  rows.forEach(k=>{
+    const item=document.createElement("div"); item.className="item";
+    const title=document.createElement("strong"); title.textContent=k.question;
+    const answer=document.createElement("div"); answer.className="small";
+    answer.style.marginTop="5px"; answer.textContent=k.answer;
+    const del=document.createElement("button"); del.textContent="Delete";
+    del.onclick=()=>deleteKnowledge(k.id);
+    item.append(title,answer,del); box.append(item);
+  });
+}
+
+async function deleteKnowledge(id) {
+  try {
+    if (db && currentUser && !guest) {
+      const {error}=await db.from("knowledge").delete().eq("id",id).eq("user_id",currentUser.id);
+      if (error) throw error;
+    }
+    localKnowledge=localKnowledge.filter(k=>k.id!==id);
+    localStorage.setItem("xevrune_knowledge",JSON.stringify(localKnowledge));
+    renderKnowledge();
+  } catch(e) { alert("Delete failed: "+errorText(e)); }
+}
+
+function addMessage(role,content) {
+  const el=document.createElement("div");
+  el.className="message "+(role==="user"?"user":"bot");
+  el.textContent=content; $("chat").append(el);
+  $("chat").scrollTop=$("chat").scrollHeight;
+}
+
+async function persistMessage(role,content) {
+  if (db && currentUser && !guest) {
+    try { await insertCloud("chat_messages",{role,content}); }
+    catch(e) { setStatus("connectionStatus","Chat history couldn't be saved: "+errorText(e)); }
+  } else {
+    localChat.push({role,content,created_at:new Date().toISOString()});
+    localChat=localChat.slice(-100);
+    localStorage.setItem("xevrune_chat",JSON.stringify(localChat));
+  }
+}
+
+function restoreChat() {
+  $("chat").replaceChildren();
+  const history=localChat.slice(-60);
+  if (!history.length) {
+    addMessage("assistant","Hello! I'm Xevrune. What would you like to explore today?");
+    return;
+  }
+  history.forEach(m=>addMessage(m.role,m.content));
+}
+
+function calculate(text) {
+  let expr=text.trim()
+    .replace(/^(calculate|what is|what's|solve)\s+/i,"")
+    .replace(/[×x]/g,"*").replace(/÷/g,"/")
+    .replace(/\bplus\b/gi,"+").replace(/\bminus\b/gi,"-")
+    .replace(/\btimes\b/gi,"*").replace(/\bdivided by\b/gi,"/")
+    .replace(/\bsquared\b/gi,"**2").replace(/\?$/,"").trim();
+  if (!/^[\d\s()+\-*/%.]+$/.test(expr) || !/\d/.test(expr)) return null;
+  try {
+    const result=Function('"use strict";return ('+expr+')')();
+    if (typeof result!=="number" || !Number.isFinite(result)) return "That calculation is not a finite number.";
+    return Number(result.toPrecision(12)).toString();
+  } catch { return null; }
+}
+
+function fallbackReply(text) {
+  const t=text.toLowerCase().trim();
+  const known=localKnowledge.find(k=>t.includes(k.question.toLowerCase())||k.question.toLowerCase().includes(t));
+  if (known) return known.answer;
+  const math=calculate(text);
+  if (math!==null) return "The answer is "+math+".";
+  if (/^(hi|hello|hey|yo)\b/.test(t)) return "Hello! What would you like to explore today?";
+  if (t.includes("your name")) return "I'm Xevrune, your AI assistant.";
+  if (t.includes("who made you")||t.includes("who created you")) return "Xevrune is an AI project being developed with a browser interface, memory, knowledge tools, and language capabilities.";
+  if (t.includes("remember")) return "Add a note under Personal Memory, and I'll be able to use it as context.";
+  if (t.includes("help")) return "I can use your saved knowledge, perform basic calculations, and have conversations when Xevrune Intelligence is active.";
+  if (t.includes("time")) return "Your device time is "+new Date().toLocaleTimeString()+".";
+  if (t.includes("date")||t.includes("today")) return "Your device date is "+new Date().toLocaleDateString()+".";
+  return "I'm still learning how to respond to this kind of question. Try activating Xevrune Intelligence, or add useful information to the knowledge base.";
+}
+
+async function loadModel() {
+  if (model || modelLoading) return;
+  modelLoading=true; $("loadModelBtn").disabled=true;
+  setStatus("modelStatus","Initializing Xevrune Intelligence...");
+  try {
+    const {pipeline,env}=await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.2");
+    env.allowLocalModels=false;
+    model=await pipeline("text-generation","onnx-community/Qwen2.5-0.5B-Instruct",{
+      dtype:"q4",
+      progress_callback:p=>{
+        if(p?.status) setStatus("modelStatus","Preparing intelligence: "+p.status+
+          (p.progress!=null?" "+Math.round(p.progress)+"%":""));
+      }
+    });
+    setStatus("modelStatus","Xevrune Intelligence is ready.");
+  } catch(e) {
+    model=null;
+    setStatus("modelStatus","Intelligence couldn't start on this device. You can still use the basic chat.");
+  } finally {
+    modelLoading=false; $("loadModelBtn").disabled=false;
+  }
+}
+
+async function askModel(text) {
+  if (!model) return fallbackReply(text);
+  const memory=localMemories.slice(0,15).map(m=>m.content).join("\n");
+  const knowledge=localKnowledge.slice(0,20).map(k=>k.question+": "+k.answer).join("\n");
+  const history=localChat.slice(-8).map(m=>({
+    role:m.role==="assistant"?"assistant":m.role,
+    content:m.content
+  }));
+  const messages=[
+    {role:"system",content:
+      "You are Xevrune, a helpful, honest, friendly AI assistant. Answer naturally. Admit uncertainty. " +
+      "Never claim to have performed actions you haven't performed. " +
+      "Relevant personal notes:\n"+(memory||"(none)")+
+      "\nUser-provided knowledge:\n"+(knowledge||"(none)")
+    },
+    ...history,
+    {role:"user",content:text}
+  ];
+  const result=await model(messages,{max_new_tokens:180,do_sample:true,temperature:0.7,repetition_penalty:1.1});
+  const generated=result?.[0]?.generated_text;
+  if (Array.isArray(generated)) {
+    const last=generated[generated.length-1];
+    return last?.content||"I couldn't generate a response.";
+  }
+  if (typeof generated==="string") return generated;
+  return "I couldn't generate a response.";
+}
+
+async function sendMessage() {
+  if (busy) return;
+  const text=$("userInput").value.trim();
+  if (!text) return;
+  busy=true; $("sendBtn").disabled=true; $("userInput").value="";
+  addMessage("user",text); await persistMessage("user",text);
+  setStatus("typing",model?"Xevrune is thinking...":"Preparing a response...");
+  try {
+    let reply;
+    try { reply=await askModel(text); }
+    catch { reply=fallbackReply(text); }
+    addMessage("assistant",reply);
+    await persistMessage("assistant",reply);
+  } finally {
+    $("typing").textContent="";
+    $("sendBtn").disabled=false; busy=false;
+  }
+}
+
+$("signupBtn").addEventListener("click",signUp);
+$("loginBtn").addEventListener("click",signIn);
+$("logoutBtn").addEventListener("click",signOut);
+$("guestBtn").addEventListener("click",()=>{guest=true;currentUser=null;showApp();});
+$("saveMemoryBtn").addEventListener("click",saveMemory);
+$("saveKnowledgeBtn").addEventListener("click",saveKnowledge);
+$("knowledgeSearch").addEventListener("input",renderKnowledge);
+$("sendBtn").addEventListener("click",sendMessage);
+$("userInput").addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}
+});
+$("loadModelBtn").addEventListener("click",loadModel);
+$("stopModelBtn").addEventListener("click",()=>{
+  model=null;setStatus("modelStatus","Xevrune Intelligence is paused.");
+});
+$("clearChatBtn").addEventListener("click",()=>{
+  if(!confirm("Clear this visible conversation? Previously saved cloud history will remain."))return;
+  localChat=[];
+  localStorage.setItem("xevrune_chat","[]");
+  $("chat").replaceChildren();
+  addMessage("assistant","Conversation cleared. What shall we discuss?");
+});
+$("calcBtn").addEventListener("click",()=>{
+  $("userInput").value="Calculate 125 * 8";
+  $("userInput").focus();
+});
+
+init();
+</script>
+</body>
+</html>
